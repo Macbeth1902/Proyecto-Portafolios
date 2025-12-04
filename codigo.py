@@ -53,7 +53,7 @@ def load_prices(universe="regiones", start="2020-01-01") -> pd.DataFrame:
         elif isinstance(universe, list):
             tickers = tuple(universe)
         else:
-            raise ValueError("Universe inválido. Usa 'regiones', 'sectores' o lista de tickers.")
+            raise ValueError("Universo inválido. Usa 'regiones', 'sectores' o una lista de tickers.")
 
     df = _download_prices(tickers, start=start)
     df = _clean_data(df)
@@ -67,23 +67,33 @@ def load_returns(universe="regiones", start="2020-01-01") -> pd.DataFrame:
     return returns
 
 
-# Guardar cada ETF en CSV individual
-def save_returns_to_csv(returns_df: pd.DataFrame, universe: str):
-    # Carpeta para este universo
-    dir_path = OUTPUT_DIR / universe
-    dir_path.mkdir(exist_ok=True)
+# Guardar cada ETF en CSV, tanto individual como consolidado
+def save_all_csvs():
+    # Regiones
+    regiones_ret = load_returns("regiones")
+    regiones_ret.to_csv(OUTPUT_DIR / "regiones.csv")
+    print("Guardado: regiones.csv")
 
-    for col in returns_df.columns:
-        file_path = dir_path / f"{col}_returns.csv"
-        returns_df[[col]].to_csv(file_path, index=True)
-        print(f"✅ Guardado: {file_path}")
+    # Sectores
+    sectores_ret = load_returns("sectores")
+    sectores_ret.to_csv(OUTPUT_DIR / "sectores.csv")
+    print("Guardado: sectores.csv")
 
+    # Consolidado
+    todos_ret = pd.concat([regiones_ret, sectores_ret], axis=1)
+    todos_ret.to_csv(OUTPUT_DIR / "todos.csv")
+    print("Guardado: todos.csv")
 
-# Verificación rápida de funcionalidad
+    # CSV individual para cada ETF
+    for universe, df in [("regiones", regiones_ret), ("sectores", sectores_ret)]:
+        folder = OUTPUT_DIR / universe
+        folder.mkdir(exist_ok=True)
+
+        for ticker in df.columns:
+            df[[ticker]].to_csv(folder / f"{ticker}.csv")
+            print(f"Guardado CSV individual: {ticker} en /{universe}/")
+
+## PRUEBA
 if __name__ == "__main__":
-    for universe in ["regiones", "sectores"]:
-        returns_df = load_returns(universe)
-        print(f"\nPrimeras filas de rendimientos ({universe}):")
-        print(returns_df.head())
-
-        save_returns_to_csv(returns_df, universe)
+    save_all_csvs()
+    print("\n CSV exportados correctamente.")
