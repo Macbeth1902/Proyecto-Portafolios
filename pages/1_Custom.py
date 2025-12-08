@@ -4,15 +4,13 @@ import numpy as np
 import yfinance as yf
 import matplotlib.pyplot as plt
 
-import variables as va
-from sidebar import show_sidebar
-from metricas import Metricas
+import backend.variables as va
+from backend.sidebar import show_sidebar
+from backend.metricas import Metricas
+from backend.portfolio_analyzer import PortfolioAnalyzer
 
-"""
-CUSTOM.PY
-
-Muestra la hoja del portafolio custom
-"""
+### CUSTOM.PY
+### Muestra la hoja del portafolio custom
 
 st.set_page_config(
     page_title="Portfolio Allocation Analysis",
@@ -53,7 +51,7 @@ if "df_tickers" not in st.session_state or st.session_state.df_tickers is None:
 if "df_ETF_bechmark" not in st.session_state or st.session_state.df_ETF_bechmark is None:
     show_warning_with_image("❌ Missing data: Click :green[Load data].")
 
-# =======================================================================
+# # =========================== LOAD DATA ===========================
 
 # Load Session state variables
 tickers = st.session_state.tickers_input
@@ -71,7 +69,6 @@ df_ETF_bechmark_now["Date"] = pd.to_datetime(df_ETF_bechmark_now["Date"])
 
 # Cortar DataFrames
 df_ticker_cortado_fechas = df_tickers_now[(df_tickers_now["Date"] >= fecha_inicio_var) & (df_tickers_now["Date"] <= fecha_fin_var)]
-
 df_ETF_cortado_fechas = df_ETF_bechmark_now[(df_ETF_bechmark_now["Date"] >= fecha_inicio_var) & (df_ETF_bechmark_now["Date"] <= fecha_fin_var)]
 
 #  ===========================    DEBUG   ==================
@@ -112,7 +109,7 @@ def Estado_1_CUSTOM_2():
     # --- 2) Detectar cambios en los tickers --- #
     if st.session_state.last_tickers != tickers_now:
 
-        old_df = st.session_state.df_custom.copy()
+        # old_df = st.session_state.df_custom.copy()
 
         # Nuevo DF base
         n = len(tickers_now)
@@ -143,8 +140,8 @@ def Estado_1_CUSTOM_2():
     st.write("### Configuración de Pesos (Custom)")
 
     # -------- FORM PARA EVITAR AUTOUPDATE -------- #
-    with st.form("form_pesos"):
-
+    form_key = f"form_pesos_{strategy}_{'_'.join(tickers_now)}"
+    with st.form(form_key):
         edited_df = st.data_editor(
             st.session_state.df_custom,
             num_rows="fixed",
@@ -183,79 +180,91 @@ def Estado_1_CUSTOM_2():
             # CONTINUAR---------------
 
     # -------- Mostrar valores finales -------- #
-    st.write("### Pesos finales (formato decimal):")
     weights_decimal = st.session_state.df_custom["Weights (%)"] / 100
-    st.write(weights_decimal)
+    weights_decimal.index = st.session_state.df_custom["ETFs"]
     
-Estado_1_CUSTOM_2()
+    # Alinear DataFrame con los tickers de los pesos
+    df_returns_aligned = df_ticker_cortado_fechas.copy()
 
+    # Mantener 'Date' y solo los tickers que tenemos en weights_decimal
+    tickers_in_df = [ticker for ticker in weights_decimal.index if ticker in df_returns_aligned.columns]
+    df_returns_aligned = df_returns_aligned[["Date"] + tickers_in_df]
+    
+    # Reindexar pesos para coincidir con columnas del DataFrame
+    weights_aligned = weights_decimal.loc[tickers_in_df]
 
+    analyzer = PortfolioAnalyzer(df_returns_aligned, weights_aligned, st.session_state.Tasa_libre_de_riesgo_widget)
 
-col1, col2 = st.columns([0.9, 1])
+    metrics = analyzer.analyze()
+    st.session_state.metrics = metrics
+    Metricas(metrics)
 
-with col2:
-    with st.container():
-        Metricas()
+    return analyzer
 
+# ========================== METRICAS ==========================
+analyzer = Estado_1_CUSTOM_2()
 
-with col1:
-    with st.container():
-        st.subheader("Portfolio Chart")
+if analyzer:
 
-        ticker = "TICKER"
-       # -------------------------
-        # BENCHMARK: crecer desde $1
-        # -------------------------
-        df_bench = df_ETF_bechmark_now.copy()
-        df_bench["Date"] = pd.to_datetime(df_bench["Date"])
-        df_bench = df_bench.sort_values("Date")
+    # CÁLCULO DE MÉTRICAS CUSTOM
+    metrics = st.session_state.metrics
 
-        # Suponemos que los rendimientos son diarios en decimal (ej: 0.0012)
-        df_bench["cum_growth"] = (1 + df_bench[df_bench.columns[1]]).cumprod()
+    # ================= Benchmark =================
+    # Benchmark según estrategia
+    st.subheader("Benchmark Comparison (Metrics Only)")
 
-        # -------------------------
-        # SIMULACIONES RANDOM
-        # -------------------------
-        precio_inicial = 1       # para que compare con el benchmark
-        mu = 0.10 / 365
-        sigma = 0.20 / np.sqrt(365)
-        dias = len(df_bench)     # misma longitud que el benchmark
+    if strategy == "by Regions":
+        benchmark_weights = { # Escribimos el "portafolio predefinido"
+            "SPLG": 0.7062, "EWC": 0.0323,
+            "IEUR": 0.1176, "EEM": 0.0902, "EWJ": 0.0537
+        }
+    else:
+        benchmark_weights = {
+            "XLC": 0.0999, "XLY": 0.1025, "XLP": 0.0482, "XLE": 0.0295,
+            "XLF": 0.1307, "XLV": 0.0958, "XLI": 0.0809, "XLB": 0.0166,
+            "XLRE": 0.0187, "XLK": 0.3535, "XLU": 0.0237
+        }
 
-        ruido1 = np.random.normal(mu, sigma, dias)
-        precios1 = precio_inicial * np.exp(np.cumsum(ruido1))
+    tickers_bench = [t for t in benchmark_weights if t in df_ticker_cortado_fechas.columns]
+    df_bench_aligned = df_bench_aligned = df_ticker_cortado_fechas[["Date"] + tickers_bench]
+    weights_bench_aligned = pd.Series({t: benchmark_weights[t] for t in tickers_bench})
 
-        ruido2 = np.random.normal(mu, sigma, dias)
-        precios2 = precio_inicial * np.exp(np.cumsum(ruido2))
+    benchmark_analyzer = PortfolioAnalyzer(
+        df_bench_aligned,
+        weights_bench_aligned,
+        st.session_state.Tasa_libre_de_riesgo_widget,
+        analyzer.portfolio_returns
+    )
 
-        # -------------------------
-        # PLOT
-        # -------------------------
-        fig, ax = plt.subplots(figsize=(9, 5))
+    benchmark_metrics = benchmark_analyzer.analyze()
 
-        ax.set_facecolor("#22304A")
-        fig.patch.set_facecolor("#22304A")
+    # ================= TABLA COMPARATIVA =================
+    st.write("### Benchmark Comparison Table")
+    df_compare = pd.DataFrame({
+        "Custom": metrics, ## Portafolio definido por el usuario
+        "Benchmark": benchmark_metrics ## Portafolio base o predefinido
+    }).round(4)
+    st.dataframe(df_compare)
 
-        # Líneas
-        ax.plot(df_bench["Date"], df_bench["cum_growth"], color="yellow", linewidth=2,
-                label="Benchmark ($1 inicial)")
+    # ================= GRÁFICA PRINCIPAL =================
+    st.write("### Cumulative Return — Custom vs Benchmark")
 
-        ax.plot(df_bench["Date"], precios1, color="red", label="Simulation 1")
-        ax.plot(df_bench["Date"], precios2, color="gray", alpha=0.7, label="Simulation 2")
+    cum_custom = (1 + analyzer.portfolio_returns).cumprod()
+    cum_bench = (1 + benchmark_analyzer.portfolio_returns).cumprod()
 
-        # Títulos y estilo
-        ax.set_title("Benchmark vs Random Simulations", color="white")
-        
-        ax.tick_params(colors="white")
-        for side in ["bottom", "top", "left", "right"]:
-            ax.spines[side].set_color("white")
+    fig, ax = plt.subplots(figsize=(6, 3))
+    ax.plot(cum_custom, label="Custom", linewidth=2.5, color="#58a6ff")
+    ax.plot(cum_bench, label="Benchmark", linewidth=2.5, color="#3fb950")
 
-        ax.legend(facecolor="#1C273B", labelcolor="white")
-
+    ax.set_facecolor("#0d1117")
+    fig.patch.set_facecolor("#0d1117")
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    col1,col2 = st.columns(2)
+    ax.legend(facecolor="#0d1117", labelcolor="white")
+    with col2:
         st.pyplot(fig)
 
-#  ===========================    DEBUG   ==================
-st.write(df_ticker_cortado_fechas.head(5))
-st.write(df_ETF_cortado_fechas.head(5))
-st.write("----------------")
-st.write(df_ticker_cortado_fechas.tail(5))
-st.write(df_ETF_cortado_fechas.tail(5))
+    # ================= VISUALIZACIONES =================
+    st.write("### Custom Portfolio Visualizations")
+    analyzer.plot_portfolio_analysis()

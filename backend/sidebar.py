@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 import matplotlib.pyplot as plt
-import variables as va
-from data import load_returns,load_ETF_bechmark,cargar_cortes_fechas,load_data_bounds
+import backend.variables as va
+from backend.data import load_returns,load_ETF_bechmark,cargar_cortes_fechas,load_data_bounds
 
 
 def init_state():
