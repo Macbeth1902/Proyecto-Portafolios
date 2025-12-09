@@ -8,4 +8,4 @@ Proyecto Seminario de Finanzas I.
 - Pérez Hernández Rafael Diego
 - Tilihuit Ortigoza Rebeca Macbeth
 
-Para visualizar la aplicación de Streamlit basta ejecutar Homepage.py
+Para visualizar la aplicación de Streamlit basta ejecutar main.py
