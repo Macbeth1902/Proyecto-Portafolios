@@ -3,7 +3,9 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 import matplotlib.pyplot as plt
+
 import backend.variables as va
+from backend.metricas import Metricas
 from backend.data import load_returns,load_ETF_bechmark,cargar_cortes_fechas,load_data_bounds
 
 
@@ -23,7 +25,7 @@ def show_sidebar():
     with st.sidebar:
         init_state()
 
-        col1,col2,col3 = st.columns([0.5,1.5,0.7])
+        col1,col2,col3 = st.columns([0.5,2,0.7])
         with col2:
             st.title("⚙️ Settings")
     
@@ -66,11 +68,11 @@ def show_sidebar():
             on_change=update_query_param,)
 
         #  ============================== (3) Horizonte de Inversion ============================= QUITAR ???
-        horizon = st.pills(
-            "Time horizon",
-            options=list(va.horizon_map.keys()),
-            default="6 Months",key="horizon"
-        )
+        #horizon = st.pills(
+        #    "Time horizon",
+        #    options=list(va.horizon_map.keys()),
+        #    default="6 Months",key="horizon"
+        #)
 
         
         # ======== (2) UPDATE TICKERS SELECCIONADOS ======================
@@ -96,8 +98,8 @@ def show_sidebar():
         # 4.1) Load Data
         if boton_aceptar:
             
-            if horizon == None: 
-                st.sidebar.write(" :warning: **:red[Add time horizon]** :warning: ")
+            #if horizon == None: 
+            #    st.sidebar.write(" :warning: **:red[Add time horizon]** :warning: ")
                 #st.stop()
             if len(tickers) == 0: # NO HAY ETFs
                 st.sidebar.write(" :warning: **:red[Add tickers]** :warning: ")
@@ -105,10 +107,17 @@ def show_sidebar():
             if len(tickers) != 0:
                 st.session_state.df_tickers = load_returns(st.session_state.tickers_input)
                 st.session_state.df_ETF_bechmark = load_ETF_bechmark(st.session_state.opcion_2)
+            
                 
                 st.session_state.fecha_inicio_actual = load_data_bounds(st.session_state.fecha_inicio)
                 st.session_state.fecha_fin_actual = load_data_bounds(st.session_state.fecha_corte)
-                
+            
+            if "df_todos" not in st.session_state:
+                st.session_state.df_todos = load_returns([
+                "SPLG", "EWC", "IEUR", "EEM", "EWJ",
+                "XLC", "XLY", "XLP", "XLE", "XLF",
+                "XLV", "XLI", "XLB", "XLRE", "XLK", "XLU"])
+   
                 with col1:
                     st.success("✅ Data loaded")
                 
@@ -186,8 +195,8 @@ def show_sidebar():
             
             slider_50 = st.slider(
                 "Objective Return",
-                min_value=0.0,
-                max_value=50.0,
+                min_value=5.0,
+                max_value=20.0,
                 value=10.0,      
                 step=0.1,           # valor inicial
                 format="%.2f%%",  # muestra como %

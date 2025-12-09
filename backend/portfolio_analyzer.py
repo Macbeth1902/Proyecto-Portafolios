@@ -103,31 +103,44 @@ class PortfolioAnalyzer:
         # Gráfica de retorno acumulado: Evolución del portafolio
         cum = (1 + self.portfolio_returns).cumprod()
 
-        fig, ax = plt.subplots(figsize=(7, 3))
-        ax.plot(cum, linewidth=2, label="Cumulative Return", color=ACCENT1)
-        fig.patch.set_facecolor(DARK_BG)
-        ax.set_facecolor(DARK_BG)
-        ax.tick_params(colors=FG)
-        ax.set_title("Cumulative Return", color=FG)
-        ax.legend(facecolor=DARK_BG, labelcolor=FG)
-        st.pyplot(fig)
+        #fig, ax = plt.subplots(figsize=(7, 3))
+        #ax.plot(cum, linewidth=2, label="Cumulative Return", color=ACCENT1)
+        #fig.patch.set_facecolor(DARK_BG)
+        #ax.set_facecolor(DARK_BG)
+        #ax.tick_params(colors=FG)
+        #ax.set_title("Cumulative Return", color=FG)
+        #ax.legend(facecolor=DARK_BG, labelcolor=FG)
+        #st.pyplot(fig)
 
+
+        col1, col2 = st.columns(2)
+        
         # ================= Drawdown =================
         cummax = cum.cummax()
         dd = (cum - cummax) / cummax
 
         fig, ax = plt.subplots(figsize=(7, 3))
-        ax.fill_between(dd.index, dd, color="#d73a49")
-        fig.patch.set_facecolor(DARK_BG)
+        ax.fill_between(dd.index, dd, color="#d75764")
+        
+        ax.set_facecolor("#22304A")
+        fig.patch.set_facecolor("#22304A")
         ax.set_title("Drawdown", color=FG)
-        ax.tick_params(colors=FG)
-        st.pyplot(fig)
+        ax.tick_params(colors="#c9d1d9")
+        for spine in ax.spines.values():
+            spine.set_color("#c9d1d9")
+        with col1:
+            st.pyplot(fig)
 
         # ================= Histogram =================
         # Histograma con la distribución de retornos diarios
         fig, ax = plt.subplots(figsize=(7, 3))
-        ax.hist(self.portfolio_returns, bins=40, alpha=0.75, color=ACCENT2)
-        fig.patch.set_facecolor(DARK_BG)
+        ax.hist(self.portfolio_returns, bins=40, alpha=0.75, color="#3fb950")
+        ax.set_facecolor("#22304A")
+        fig.patch.set_facecolor("#22304A")
         ax.set_title("Daily Return Distribution", color=FG)
-        ax.tick_params(colors=FG)
-        st.pyplot(fig)
+        ax.tick_params(colors="#c9d1d9")
+        for spine in ax.spines.values():
+            spine.set_color("#c9d1d9")
+        
+        with col2:
+            st.pyplot(fig)

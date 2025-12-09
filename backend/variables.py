@@ -1,3 +1,11 @@
+"""
+VARIABLES.PY
+
+Guarda listas y dataframes para no hacer 
+un relajo en los demás archivos
+"""
+
+
 ETF_regiones = ["SPLG", "EWC", "IEUR", "EEM", "EWJ"]
 ETF_sectores = ["XLC", "XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLB", "XLRE", "XLK", "XLU"]
 
@@ -31,16 +39,23 @@ horizon_map = {
     "10 Years": "10y"
     }
 
-metrics = {
-    "Mean": "valor_media",
-    "Volatility": "valor_volatilidad",
-    "Beta": "valor_beta",
-    "Max Drawdown": "valor_maxdrawdown",
-    "Skewness": "valor_skew",
-    "Kurtosis": "valor_kurtosis",
-    "VaR 95%": "valor_VARP95%",
-    "CVaR 95%":"valor_Cvar95%",
-    "Sharpe Ratio": "valor_sharp",
-    "Sortino Ratio": "valor_sortino"}
+# Métricas donde un valor MÁS ALTO es mejor
+higher_is_better = [
+    "Mean (Annual)",
+    "Sharpe",
+    "Sortino",
+    "Calmar Ratio",
+    "Skewness"
+]
+
+# Métricas donde un valor MÁS BAJO es mejor
+lower_is_better = [
+    "Volatility (Annual)",
+    "Max Drawdown",
+    "VaR 95%",
+    "CVaR 95%",
+    "Kurtosis"  
+]
+
 
 

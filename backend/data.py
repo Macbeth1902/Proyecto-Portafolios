@@ -1,5 +1,15 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import sys
+import os
+from datetime import datetime, timedelta
+import yfinance as yf
+from functools import lru_cache
+from pathlib import Path
+import backend.variables as va
 
 
 """
@@ -74,4 +84,30 @@ def cargar_cortes_fechas():
 @st.cache_data
 def load_data_bounds(date):
     return date
-    
+
+def compare_values(row):
+    metric = row.name
+    c = row["Custom"]
+    b = row["Benchmark"]
+
+    if abs(c - b) < 1e-9:  # Son prácticamente iguales
+        return "⬛"  # Negro
+
+    # Caso 1: métricas donde más alto = mejor
+    if metric in va.higher_is_better:
+        if c > b:
+            return "🟦"  # Azul = Custom vence
+        else:
+            return "⬛"  # Gris/marrón = Benchmark vence
+
+    # Caso 2: métricas donde más bajo = mejor
+    if metric in va.lower_is_better:
+        if c < b:
+            return "🟦"
+        else:
+            return "⬛"
+
+    # Si no está en ninguna lista, evitar errores
+    return "❓"
+
+
