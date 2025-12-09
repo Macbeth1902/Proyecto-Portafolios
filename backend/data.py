@@ -78,7 +78,7 @@ def load_ETF_bechmark(strategy: str):
 
 @st.cache_data
 def cargar_cortes_fechas():
-    df_fechas_load = pd.read_csv("MarketDATA/todos.csv", parse_dates=["Date"])
+    df_fechas_load = pd.read_csv("MarketData/todos.csv", parse_dates=["Date"])
     return df_fechas_load
 
 @st.cache_data
@@ -109,5 +109,6 @@ def compare_values(row):
 
     # Si no está en ninguna lista, evitar errores
     return "❓"
+
 
 
