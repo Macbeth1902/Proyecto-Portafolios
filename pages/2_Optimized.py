@@ -115,10 +115,18 @@ def matrices_activos():
     # Se asume que load_returns ya entrega los datos limpios y en el rango de tiempo deseado (últimos 5 años).
     retornos_sin_fecha = df_ticker_cortado_fechas.set_index("Date")
     
-    # REDUNCIANCIA 
+    # ================== REDUNCIANCIA CHECK ======================== 
     #st.write(retornos_sin_fecha.head(5))
     if retornos_sin_fecha.empty:
         raise ValueError("No hay datos suficientes para los tickers proporcionados.")
+    
+    # Número real de activos con datos
+    tickers_validos = retornos_sin_fecha.columns.tolist()
+    n_activos = len(tickers_validos)
+
+    if n_activos != len(tickers):
+        show_warning_with_image("⚠️ Tickers selected changed, please Click :green[**Load data**] in sidebar.")
+    # ========================================================================
     
     # SOLO TOMAMOS LOS QUE TIENEN RENDIMIENTOS   
     retornos_sin_fecha = retornos_sin_fecha.select_dtypes(include=["float","int"])
@@ -563,5 +571,6 @@ Heat_map()
 #st.write("----------------")
 #st.write(df_ticker_cortado_fechas.tail(5))
 #st.write(df_ETF_cortado_fechas.tail(5))
+
 
 #st.write(returns.head(5))
